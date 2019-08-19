@@ -3,7 +3,7 @@ SRC 	= partition_record_reader.c
 BIN 	= bin
 
 all: $(SRC)
-	gcc -o $(BIN)/$(EXEC) $(SRC)
+	gcc -g -o $(BIN)/$(EXEC) $(SRC)
 
 clean:
 	rm -rf $(BIN)/*
