@@ -40,67 +40,66 @@ struct mbr {
 };
 
 /* VARIABLES */
-char* mbrptr;
-struct mbr* mbr;
-char magicnumber[2] = {0x55, 0xaa};
+char MAGIC_NUMBER[2] = {0x55, 0xaa};
+unsigned int N_INDICATOR = 31;
+char OS_INDICATORS[][128] =
+{
+	{0x00}, {"Empty partition-table entry"},
+	{0x01}, {"DOS FAT12"},
+	{0x04}, {"DOS FAT16 (up to 32MB)"},
+	{0x05}, {"DOS 3.3+ extended partition"},
+	{0x06}, {"DOS3.31+ FAT16 (over 32MB)"},
+
+	{0x07}, {"OS/2 HPFS, Windows NT NTFS, Advanced Unix"},
+	{0x08}, {"OS/2 v1.0-1.3, AIX bootable partition, SplitDrive"},
+	{0x09}, {"AIX data partition"},
+	{0x0a}, {"OS/2 Boot Manager"},
+	{0x0b}, {"Windows 95+ FAT32"},
+
+	{0x0c}, {"Windows 95+ FAT32 (using LBA-mode INT 13 extensions)"},
+	{0x0e}, {"DOS FAT16 (over 32MB, using INT 13 extensions)"},
+	{0x0f}, {"Extended partition (using INT 13 extensions)"},
+	{0x17}, {"Hidden NTFS partition"},
+	{0x1b}, {"Hidden Windows 95 FAT32 partition"},
+
+	{0x1c}, {"Hidden Windows 95 FAT32 partition (using LBA-mode INT 13 extensions)"},
+	{0x1e}, {"Hidden LBA VFAT partition"},
+	{0x42}, {"Dynamic disk volume"},
+	{0x50}, {"OnTrack Disk Manager, read-only partition"},
+	{0x51}, {"OnTrack Disk Manager, read/write partition"},
+
+	{0x81}, {"Linux"},
+	{0x82}, {"Linux Swap partition, Solaris (Unix)"},
+	{0x83}, {"Linux native file system (ext2fs/xiafs)"},
+	{0x85}, {"Linux EXT"},
+	{0x86}, {"FAT16 volume/stripe set (Windows NT)"},
+
+	{0x87}, {"HPFS fault-tolerant mirrored partition, NTFS volume/stripe set"},
+	{0xbe}, {"Solaris boot partition"},
+	{0xc0}, {"DR-DOS/Novell DOS secured partition"},
+	{0xc6}, {"Corrupted FAT16 volume/stripe set (Windows NT)"},
+	{0xc7}, {"Corrupted NTFS volume/stripe set"},
+
+	{0xf2}, {"DOS 3.3+ secondary partition"}
+};
+
 
 /*
  * Parse the OS indicator code (incomplete list)
  * Return 'unknown' string if the corresponding code
  * is not found
  */
-char* parse_os_indicator(char* osindicator)
+char* parse_os_indicator(char *osindicator)
 {
-	unsigned int nindicator = 31;
 	unsigned int i;
 	char* result;
 	unsigned int hexacode;
-	char indicators[][128] =
-	{
-	       	{0x00}, {"Empty partition-table entry"},
-		{0x01}, {"DOS FAT12"},
-		{0x04}, {"DOS FAT16 (up to 32MB)"},
-		{0x05}, {"DOS 3.3+ extended partition"},
-		{0x06}, {"DOS3.31+ FAT16 (over 32MB)"},
-
-		{0x07}, {"OS/2 HPFS, Windows NT NTFS, Advanced Unix"},
-		{0x08}, {"OS/2 v1.0-1.3, AIX bootable partition, SplitDrive"},
-		{0x09}, {"AIX data partition"},
-		{0x0a}, {"OS/2 Boot Manager"},
-		{0x0b}, {"Windows 95+ FAT32"},
-
-		{0x0c}, {"Windows 95+ FAT32 (using LBA-mode INT 13 extensions)"},
-		{0x0e}, {"DOS FAT16 (over 32MB, using INT 13 extensions)"},
-		{0x0f}, {"Extended partition (using INT 13 extensions)"},
-		{0x17}, {"Hidden NTFS partition"},
-		{0x1b}, {"Hidden Windows 95 FAT32 partition"},
-
-		{0x1c}, {"Hidden Windows 95 FAT32 partition (using LBA-mode INT 13 extensions)"},
-		{0x1e}, {"Hidden LBA VFAT partition"},
-		{0x42}, {"Dynamic disk volume"},
-		{0x50}, {"OnTrack Disk Manager, read-only partition"},
-		{0x51}, {"OnTrack Disk Manager, read/write partition"},
-
-		{0x81}, {"Linux"},
-		{0x82}, {"Linux Swap partition, Solaris (Unix)"},
-		{0x83}, {"Linux native file system (ext2fs/xiafs)"},
-		{0x85}, {"Linux EXT"},
-		{0x86}, {"FAT16 volume/stripe set (Windows NT)"},
-
-		{0x87}, {"HPFS fault-tolerant mirrored partition, NTFS volume/stripe set"},
-		{0xbe}, {"Solaris boot partition"},
-		{0xc0}, {"DR-DOS/Novell DOS secured partition"},
-		{0xc6}, {"Corrupted FAT16 volume/stripe set (Windows NT)"},
-		{0xc7}, {"Corrupted NTFS volume/stripe set"},
-
-		{0xf2}, {"DOS 3.3+ secondary partition"}
-	};
-	
+		
 	result = malloc(128*sizeof(char));
 
-	for (i=0; i<nindicator; i++) {
-		char* code = indicators[2*i];
-		char* definition = indicators[(2*i)+1];
+	for (i=0; i<N_INDICATOR; i++) {
+		char* code = OS_INDICATORS[2*i];
+		char* definition = OS_INDICATORS[(2*i)+1];
 
 		if (strcmp(code, osindicator) == 0) {
 			memcpy(result, definition, 128*sizeof(char));
@@ -120,11 +119,11 @@ char* parse_os_indicator(char* osindicator)
  * Never fails, print errors in case of non parsable address
  * or unknown fields
  */
-struct partition parse_partition(char* partitionptr)
+struct partition parse_partition(char *partitionptr)
 {
 	struct partition result;
-	char* starthead, *endhead;
-	char* osindicator;
+	char *starthead, *endhead;
+	char *osindicator;
 
 	osindicator = malloc(sizeof(char));
 	if (osindicator == NULL) {
@@ -141,7 +140,7 @@ struct partition parse_partition(char* partitionptr)
  * Never fails, print errors in case of non parsable address
  * or unknown fields
  */
-void parse_mbr(struct mbr* mbr, char* mbrptr)
+void parse_mbr(struct mbr *mbr, char *mbrptr)
 {
 	unsigned i;
 	
@@ -156,10 +155,10 @@ void parse_mbr(struct mbr* mbr, char* mbrptr)
  *
  * Exit in case of I/O error or the MBR could not be found
  */
-char* read_mbr(char* fname)
+char* read_mbr(char *fname)
 {
-	FILE* fptr;
-	char* buffer;
+	FILE *fptr;
+	char *buffer;
 	size_t result;
 
 	buffer = malloc(MBR_SIZE * sizeof(char));
@@ -180,7 +179,7 @@ char* read_mbr(char* fname)
 		exit(IO_ERROR);
 	}
 
-	if (strcmp(magicnumber, buffer+MBR_MAGIC_NUMBER_START) != 0) {
+	if (strcmp(MAGIC_NUMBER, buffer+MBR_MAGIC_NUMBER_START) != 0) {
 		printf("Error: the found buffer is not a MBR\n");
 		exit(FORMAT_ERROR);
 	}
@@ -194,7 +193,7 @@ void print_usage()
 	printf("(Usually <device> is /dev/sda)\n");
 }
 
-void print_mbr(struct mbr* mbr)
+void print_mbr(struct mbr *mbr)
 {
 	unsigned int i;
 
@@ -208,16 +207,19 @@ void print_mbr(struct mbr* mbr)
 
 int main(int argc, char* argv[])
 {
-	mbr = malloc(sizeof(struct mbr));
-	if (mbr == NULL) {
-		printf("Error: Could not allocate memory\n");
-		exit(MEM_ERROR);
-	}
+	struct mbr *mbr;
+	char *mbrptr;
 
 	if (argc != 2) {
 		printf("Wrong number of arguments\n");
 		print_usage();
 		return INPUT_ERROR;
+	}
+
+	mbr = malloc(sizeof(struct mbr));
+	if (mbr == NULL) {
+		printf("Error: Could not allocate memory\n");
+		exit(MEM_ERROR);
 	}
 
 	mbrptr = read_mbr(argv[1]);
