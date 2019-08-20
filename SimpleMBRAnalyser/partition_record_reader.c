@@ -110,7 +110,7 @@ double binary_to_decimal(char *bin, unsigned int size)
 	power = 0;
 	for (i=0; i<size; i++) {
 		for (j=0; j<8; j++) {
-			result = result + ((bin[size-1-i] >> j) & 0x1) * pow(2, power);
+			result = result + ((bin[i] >> j) & 0x1) * pow(2, power);
 			power += 1;
 		}
 	}
@@ -163,7 +163,7 @@ struct partition parse_partition(char *partitionptr)
 		exit(MEM_ERROR);
 	}
 
-	partitionlgth = malloc(SECTOR_SIZE * sizeof(char));
+	partitionlgth = malloc(4 * sizeof(char));
 	if (partitionlgth == NULL) {
 		printf("Error: Could not allocated memory\n");
 		exit(MEM_ERROR);
@@ -172,8 +172,8 @@ struct partition parse_partition(char *partitionptr)
 	memcpy(osindicator, partitionptr+0x4, sizeof(char));
 	*result.os_indicator = parse_os_indicator(osindicator);
 
-	memcpy(partitionlgth, partitionptr+0xc, SECTOR_SIZE*sizeof(char));
-	result.size = binary_to_decimal(partitionlgth, SECTOR_SIZE);
+	memcpy(partitionlgth, partitionptr+0xc, 4*sizeof(char));
+	result.size = SECTOR_SIZE * binary_to_decimal(partitionlgth, 4);
 	
 	return result;
 }
@@ -245,7 +245,7 @@ void print_mbr(struct mbr *mbr)
 		struct partition partition = mbr->partitions[i];
 		printf("\tPartition #%d:\n", i+1);
 		printf("\t\tOperation system indicator: %s\n", *partition.os_indicator);
-		printf("\t\tParition size (bytes): %f\n", partition.size);
+		printf("\t\tParition size (bytes): %0.0f\n", partition.size);
 	}
 }
 
