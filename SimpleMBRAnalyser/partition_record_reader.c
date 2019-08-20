@@ -9,18 +9,29 @@
  * Example :
  * sudo ./partition_record_reader /dev/sda
  *
- * REQUIRE ROOT ACCESS
+ * Assumption :
+ * Big endian representation
+ *
+ * The following macros correspond to a number of byte :
+ * MBR_SIZE, 
+ * NUMBER_PARTITION_RECORD, 
+ * PARTITION_RECORD_SIZE,
+ * SECTOR_SIZE
+ *
+ * REQUIRE ROOT ACCESS IF USING /dev/sda AS ARGUMENT
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define MBR_SIZE 		512
 #define MBR_MAGIC_NUMBER_START	0x01fe
 #define NUMBER_PARTITION_RECORD	4
 #define PARTITION_RECORD_START 	0x01be
 #define PARTITION_RECORD_SIZE	16
+#define SECTOR_SIZE		512
 
 /* ERROR CODES */
 #define INPUT_ERROR 	0x0
@@ -30,12 +41,12 @@
 
 /* STRUCTS */
 struct partition {
-	char* os_indicator;
-	unsigned long size; // in bytes
+	char** os_indicator;
+	double size; // in bytes
 };
 
 struct mbr {
-	char* devicename;
+	char devicename[128];
 	struct partition partitions[NUMBER_PARTITION_RECORD];
 };
 
@@ -83,6 +94,28 @@ char OS_INDICATORS[][128] =
 	{0xf2}, {"DOS 3.3+ secondary partition"}
 };
 
+/*
+ * Convert a sequence of byte in its decimal representation
+ * bin is the sequence of byte of size element
+ *
+ * Assumption : The binary sequence is not signed
+ */
+double binary_to_decimal(char *bin, unsigned int size)
+{
+	unsigned int i, j;
+	double power;
+	double result;
+
+	result = 0;
+	power = 0;
+	for (i=0; i<size; i++) {
+		for (j=0; j<8; j++) {
+			result = result + ((bin[size-1-i] >> j) & 0x1) * pow(2, power);
+			power += 1;
+		}
+	}
+	return result;
+}
 
 /*
  * Parse the OS indicator code (incomplete list)
@@ -92,25 +125,22 @@ char OS_INDICATORS[][128] =
 char* parse_os_indicator(char *osindicator)
 {
 	unsigned int i;
-	char* result;
 	unsigned int hexacode;
-		
-	result = malloc(128*sizeof(char));
+	char* error;
 
 	for (i=0; i<N_INDICATOR; i++) {
 		char* code = OS_INDICATORS[2*i];
 		char* definition = OS_INDICATORS[(2*i)+1];
 
-		if (strcmp(code, osindicator) == 0) {
-			memcpy(result, definition, 128*sizeof(char));
-			return result;
-		}
+		if (strcmp(code, osindicator) == 0)
+			return definition;
 	}
 
 	memcpy(&hexacode, osindicator, sizeof(char));
 	printf("Warning: Unknown OS indicator '%02X'\n", hexacode);
-	strcat(result, "Unknown");
-	return result;
+	error = malloc(128*sizeof(char));
+	strcat(error, "Unknown\0");
+	return error;
 }
 
 /*
@@ -122,16 +152,30 @@ char* parse_os_indicator(char *osindicator)
 struct partition parse_partition(char *partitionptr)
 {
 	struct partition result;
-	char *starthead, *endhead;
 	char *osindicator;
+	char *partitionlgth;
+
+	result.os_indicator = malloc(sizeof(char*));
 
 	osindicator = malloc(sizeof(char));
 	if (osindicator == NULL) {
 		printf("Error: Could not allocate memory\n");
 		exit(MEM_ERROR);
 	}
+
+	partitionlgth = malloc(SECTOR_SIZE * sizeof(char));
+	if (partitionlgth == NULL) {
+		printf("Error: Could not allocated memory\n");
+		exit(MEM_ERROR);
+	}
+
 	memcpy(osindicator, partitionptr+0x4, sizeof(char));
-	result.os_indicator = parse_os_indicator(osindicator);
+	*result.os_indicator = parse_os_indicator(osindicator);
+
+	//memcpy(partitionlgth, partitionptr+0xc, SECTOR_SIZE*sizeof(char));
+	//result.size = binary_to_decimal(partitionlgth, SECTOR_SIZE);
+	
+	return result;
 }
 
 /*
@@ -145,9 +189,8 @@ void parse_mbr(struct mbr *mbr, char *mbrptr)
 	unsigned i;
 	
 	mbrptr = mbrptr + PARTITION_RECORD_START;
-	for (int i=0; i<NUMBER_PARTITION_RECORD; i++) {
+	for (int i=0; i<NUMBER_PARTITION_RECORD; i++)
 		mbr->partitions[i] = parse_partition(mbrptr+i*PARTITION_RECORD_SIZE);
-	}
 }
 
 /*
@@ -201,7 +244,7 @@ void print_mbr(struct mbr *mbr)
 	for (i=0; i<NUMBER_PARTITION_RECORD; i++) {
 		struct partition partition = mbr->partitions[i];
 		printf("\tPartition #%d:\n", i+1);
-		printf("\t\tOperation system indicator: %s\n", partition.os_indicator);
+		printf("\t\tOperation system indicator: %s\n", *partition.os_indicator);
 	}
 }
 
@@ -222,8 +265,8 @@ int main(int argc, char* argv[])
 		exit(MEM_ERROR);
 	}
 
+	strcpy(mbr->devicename, argv[1]);
 	mbrptr = read_mbr(argv[1]);
-	mbr->devicename = argv[1];
 	parse_mbr(mbr, mbrptr);
 	print_mbr(mbr);
 }
