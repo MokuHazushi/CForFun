@@ -172,8 +172,8 @@ struct partition parse_partition(char *partitionptr)
 	memcpy(osindicator, partitionptr+0x4, sizeof(char));
 	*result.os_indicator = parse_os_indicator(osindicator);
 
-	//memcpy(partitionlgth, partitionptr+0xc, SECTOR_SIZE*sizeof(char));
-	//result.size = binary_to_decimal(partitionlgth, SECTOR_SIZE);
+	memcpy(partitionlgth, partitionptr+0xc, SECTOR_SIZE*sizeof(char));
+	result.size = binary_to_decimal(partitionlgth, SECTOR_SIZE);
 	
 	return result;
 }
@@ -186,10 +186,10 @@ struct partition parse_partition(char *partitionptr)
  */
 void parse_mbr(struct mbr *mbr, char *mbrptr)
 {
-	unsigned i;
+	unsigned int i;
 	
 	mbrptr = mbrptr + PARTITION_RECORD_START;
-	for (int i=0; i<NUMBER_PARTITION_RECORD; i++)
+	for (i=0; i<NUMBER_PARTITION_RECORD; i++)
 		mbr->partitions[i] = parse_partition(mbrptr+i*PARTITION_RECORD_SIZE);
 }
 
@@ -245,6 +245,7 @@ void print_mbr(struct mbr *mbr)
 		struct partition partition = mbr->partitions[i];
 		printf("\tPartition #%d:\n", i+1);
 		printf("\t\tOperation system indicator: %s\n", *partition.os_indicator);
+		printf("\t\tParition size (bytes): %f\n", partition.size);
 	}
 }
 
