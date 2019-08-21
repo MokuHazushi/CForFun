@@ -101,7 +101,6 @@ char OS_INDICATORS[][128] =
  * bin is the sequence of byte of size element
  *
  * Assumption : The binary sequence is not signed
- * BIG ENDIAN COMPUTATION
  */
 double binary_to_decimal(char *bin, unsigned int size)
 {
