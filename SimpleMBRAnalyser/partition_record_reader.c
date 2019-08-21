@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
 	if (argc != 2) {
 		printf("Wrong number of arguments\n");
 		print_usage();
-		return INPUT_ERROR;
+		exit(INPUT_ERROR);
 	}
 
 	mbr = malloc(sizeof(struct mbr));
