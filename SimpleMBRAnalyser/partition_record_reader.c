@@ -10,7 +10,9 @@
  * sudo ./partition_record_reader /dev/sda
  *
  * Assumption :
- * Big endian representation
+ * Little endian representation
+ * Sector size of 512bytes (common for hard-disks,
+ * not true for USB external drives and such)
  *
  * The following macros correspond to a number of byte :
  * MBR_SIZE, 
