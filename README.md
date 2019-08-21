@@ -12,3 +12,8 @@ This project takes a storing device file as argument (typically /dev/sda or VM i
 ./bin/partition_record_reader sample/archvm.bin
 ```
 ![Example screenshot](SimpleMBRAnalyser/example/simpleMBRAnalyzer_example.png)
+
+Documentation :
+- [Walkthrough MBR analyze with bash commands](http://k5rec.blogspot.com/2006/11/linux-analyzing-master-boot-record-and.html)
+- [Well explained LInux booting process](https://www.crybit.com/linux-boot-process/)
+- [Master boot record wikipedia page](https://en.wikipedia.org/wiki/Master_boot_record)
