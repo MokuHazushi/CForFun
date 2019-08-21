@@ -11,4 +11,4 @@ This project takes a storing device file as argument (typically /dev/sda or VM i
 ```
 ./bin/partition_record_reader sample/archvm.bin
 ```
-![Example screenshot](doc/simpleMBRAnalyzer_example.png)
+![Example screenshot](SimpleMBRAnalyser/example/simpleMBRAnalyzer_example.png)
