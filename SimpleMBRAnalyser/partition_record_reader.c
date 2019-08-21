@@ -99,6 +99,7 @@ char OS_INDICATORS[][128] =
  * bin is the sequence of byte of size element
  *
  * Assumption : The binary sequence is not signed
+ * BIG ENDIAN COMPUTATION
  */
 double binary_to_decimal(char *bin, unsigned int size)
 {
@@ -115,6 +116,55 @@ double binary_to_decimal(char *bin, unsigned int size)
 		}
 	}
 	return result;
+}
+
+/*
+ * Scale a big value (of byte) in a more human-readable scale
+ * value : The number of bytes to scale
+ * result : Remaining truncated value
+ * scale : The associated scale to the remaining result
+ *
+ * Example :
+ * For value = 9 150 000 000 (bytes)
+ * result = 9.150
+ * scale = Gb (Giga byte)
+ *
+ * Assumption : Because of the MBR structure, one partition
+ * can not exceed 2.199 Tb so scales above Tb are not supported
+ */
+void decimal_to_scale(double value, double *result, char *scale)
+{
+	double kilo = 1000;
+	double mega = 1000000;
+	double giga = 1000000000;
+	double tera = 1000000000000;
+
+	if (value/kilo < 1) {
+		*result = value/kilo;
+		*scale = 'K';
+		return;
+	}
+	
+	if (value/mega < 1) {
+		*result = value/kilo;
+		*scale = 'K';
+		return;
+	}
+
+	if (value/giga < 1) {
+		*result = value/mega;
+		*scale = 'M';
+		return;
+	}
+
+	if (value/tera < 1) {
+		*result = value/giga;
+		*scale = 'G';
+		return;
+	}
+
+	*result = value/tera;
+	*scale = 'T';
 }
 
 /*
@@ -243,9 +293,14 @@ void print_mbr(struct mbr *mbr)
 	printf("Device <%s> has master boot record (MBR) :\n", mbr->devicename);
 	for (i=0; i<NUMBER_PARTITION_RECORD; i++) {
 		struct partition partition = mbr->partitions[i];
+		double scaledvalue;
+		char scale;
+
+		decimal_to_scale(partition.size, &scaledvalue, &scale);
+
 		printf("\tPartition #%d:\n", i+1);
 		printf("\t\tOperation system indicator: %s\n", *partition.os_indicator);
-		printf("\t\tParition size (bytes): %0.0f\n", partition.size);
+		printf("\t\tParition size (bytes): %0.3f %cb\n", scaledvalue, scale);
 	}
 }
 
