@@ -13,6 +13,12 @@ This project takes a storing device file as argument (typically /dev/sda or VM i
 ```
 ![Example screenshot](SimpleMBRAnalyser/example/simpleMBRAnalyzer_example.png)
 
+This program aimed to provide a simplified but still equivalent output as the *fdisk* command :
+```
+fdisk -l sample/archvm.bin
+```
+![Example screenshot](SimpleMBRAnalyser/example/fdisk_example.png)
+
 Documentation :
 - [Walkthrough MBR analyze with bash commands](http://k5rec.blogspot.com/2006/11/linux-analyzing-master-boot-record-and.html)
 - [Well explained LInux booting process](https://www.crybit.com/linux-boot-process/)
