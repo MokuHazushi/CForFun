@@ -103,8 +103,7 @@ function create_initramfs () {
 
 	# Create archive
 	echo "Creating final archive..."
-	find . | cpio -o -H newc | gzip > $archive
-	mv $archive ..
+	find . | cpio -o -H newc | gzip > ../$archive
 	cd .. && rm -rf tmp
 }
 
