@@ -25,17 +25,46 @@
 # For the initramfs creation command the init script assumes that the rootfs is located on the
 # /dev/sda1 device
 
+# GLOBAL VARIABLES
+SUCCESS=1
+ERROR=-1
+
 function print_usage () {
 	echo "Usage:"
 	echo "./initramfs_basictools {create}"
 	echo "Creates an initramfs archive (gzip+cpio compressed) that mount the rootfs /dev/sda1"
 	echo 
-	echo "./initramfs_basictools {list} [file]"
+	echo "./initramfs_basictools {list} [file...]"
 	echo "List the content of an initramfs archive (assume compressed with gzip)"
-	echo
+}
+
+# Create a basic initramfs archive with the device /dev/sda1 as rootfs
+function create_initramfs () {
+}
+
+# Uncompress an initramfs archive in a temporary folder and list its content
+function list_content () {
+	echo "list"
 }
 
 if [ "$#" -lt 1 ]; then
 	echo "Error, wrong number of argument"
 	print_usage
+	exit $ERROR
 fi
+
+command="$1"
+
+if [ $command == "create" ]; then
+	echo "Creating an initramfs archive..."
+	create_initramfs
+	exit $SUCCESS
+elif [ $command == "list" ]; then
+	list_content
+	exit $SUCCESS
+fi
+
+# Unknown command
+echo "Error: Unknown command '$command'"
+print_usage
+exit $ERROR
