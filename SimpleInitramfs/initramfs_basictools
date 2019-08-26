@@ -34,17 +34,30 @@ function print_usage () {
 	echo "./initramfs_basictools {create}"
 	echo "Creates an initramfs archive (gzip+cpio compressed) that mount the rootfs /dev/sda1"
 	echo 
-	echo "./initramfs_basictools {list} [file...]"
+	echo "./initramfs_basictools {list} [file]"
 	echo "List the content of an initramfs archive (assume compressed with gzip)"
 }
 
 # Create a basic initramfs archive with the device /dev/sda1 as rootfs
 function create_initramfs () {
+	echo create
 }
 
 # Uncompress an initramfs archive in a temporary folder and list its content
+# $1 is the file corresponding to the archive
 function list_content () {
-	echo "list"
+	if [ ! -r $1 ]; then
+		echo "Error: File '$1' does not exist or is not readable"
+		exit $ERROR
+	fi
+
+	file=`basename $1`
+	mkdir tmp && cp $1 tmp/$file && cd tmp
+	mv $file $file.gz && gunzip $file.gz
+	cpio -i -d -H newc -F $file --no-absolute-filenames 
+	rm $file 
+	tree .
+	cd .. && rm -rf tmp
 }
 
 if [ "$#" -lt 1 ]; then
@@ -60,7 +73,12 @@ if [ $command == "create" ]; then
 	create_initramfs
 	exit $SUCCESS
 elif [ $command == "list" ]; then
-	list_content
+	if [ "$#" != 2 ]; then
+		echo "Error: Expect exactly 1 initramfs file"
+		print_usage
+		exit $ERROR
+	fi
+	list_content $2
 	exit $SUCCESS
 fi
 
