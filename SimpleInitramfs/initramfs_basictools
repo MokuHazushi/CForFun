@@ -28,6 +28,7 @@
 # GLOBAL VARIABLES
 SUCCESS=1
 ERROR=-1
+LOCATE_ON=$(command -v locate)
 
 function print_usage () {
 	echo "Usage:"
@@ -40,10 +41,40 @@ function print_usage () {
 
 # Create a basic initramfs archive with the device /dev/sda1 as rootfs
 function create_initramfs () {
-	local bb_path=`locate busybox | head -n1`
-	local libc_path=`locate libc.so.6 | head -n1`
-	local linker_path=`locate ld-linux-x86-64.so.2 | head -n1`
+	local bb_path
+	local libc_path
+	local linker_path
 	local archive="initramfs-linux.img"
+
+
+	# Find bin and libs
+	bb_path=`whereis busybox | cut -d" " -f2`
+	libc_path=`whereis libc.so.6 | cut -d" " -f2`
+	linker_path=`whereis ld-linux-x86-64.so.2 | cut -d" " -f2`
+
+	if [ `echo $bb_path | grep ":"` ]; then
+		if [ ! -x $LOCATE_ON ]; then
+			echo "Error: busybox binary not found"
+			exit $ERROR
+		fi
+		bb_path=`locate busybox | head -n1`
+	fi
+	
+	if [ `echo $libc_path | grep ":"` ]; then
+		if [ ! -x $LOCATE_ON ]; then
+			echo "Error: libc.so.6 not found"
+			exit $ERROR
+		fi
+		libc_path=`locate libc.so.6 | head -n1`
+	fi
+
+	if [ `echo $linker_path | grep ":"` ]; then
+		if [ ! -x $LOCATE_ON ]; then
+			echo "Error: ld-linux-x86-64.so.2 not found"
+			exit $ERROR
+		fi
+		local linker_path=`locate ld-linux-x86-64.so.2 | head -n1`
+	fi
 
 	mkdir tmp && cd tmp
 	mkdir --parents bin dev etc lib lib64 proc sbin sys new_root run
