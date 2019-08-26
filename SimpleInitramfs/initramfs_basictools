@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# This script supports the following 2 commands :
+# 1) Create a basic initramfs based on the following tutorial :
+# https://wiki.gentoo.org/wiki/Custom_Initramfs
+# 2) List the content of an initramfs archive (compressed using cpio and gzip only)
+# 
+# For the creation script, the main binary applications installed are the one 
+# provided by busybox (ls, mkdir, cp, mount, insmod...)
+#
+# This script only creates an initramfs archive, to use it the rest of the
+# system has to be configured properly meaning :
+# 1) Having the kernel configured to enable initramfs (CONFIG_BLK_DEV_INITRD=y)
+# 2) Having the kernel configured to use a standalone initramfs archive compressed in gzip format
+# (General setup -> Initramfs source file(s) -> Support initial ramdisk/ramfs compressed using gzip)
+# 3) Configure grub to recognize the new initramfs file
+#
+# Requirements (package to be installed) :
+# - tree (apt-get install tree)
+# - busybox (apt-get install busybox)
+#
+# cpio and gzip are most of the time part of the base kernel binaries.
+#
+# Assumptions :
+# For the initramfs creation command the init script assumes that the rootfs is located on the
+# /dev/sda1 device
+
+function print_usage () {
+	echo "Usage:"
+	echo "./initramfs_basictools {create}"
+	echo "Creates an initramfs archive (gzip+cpio compressed) that mount the rootfs /dev/sda1"
+	echo 
+	echo "./initramfs_basictools {list} [file]"
+	echo "List the content of an initramfs archive (assume compressed with gzip)"
+	echo
+}
+
+if [ "$#" -lt 1 ]; then
+	echo "Error, wrong number of argument"
+	print_usage
+fi
