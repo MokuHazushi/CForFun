@@ -40,7 +40,41 @@ function print_usage () {
 
 # Create a basic initramfs archive with the device /dev/sda1 as rootfs
 function create_initramfs () {
-	echo create
+	local bb_path=`locate busybox | head -n1`
+	local libc_path=`locate libc.so.6 | head -n1`
+	local linker_path=`locate ld-linux-x86-64.so.2 | head -n1`
+	local archive="initramfs-linux.img"
+
+	mkdir tmp && cd tmp
+	mkdir --parents bin dev etc lib lib64 proc sbin sys new_root run
+	
+	# Install busybox
+	echo "Installing busybox"
+	echo "Copying..."
+	echo "`basename $bb_path`"
+	cp $bb_path bin
+	echo "`basename $libc_path`"
+	cp $libc_path lib
+	echo "`basename $linker_path`"
+	cp $linker_path lib
+
+	# Create init script
+	echo "Write init script"
+	echo "#!/bin/busybox.sh" >> init
+	echo "mount -t proc none /proc" >> init
+	echo "mount -t sysfs none /sys" >> init 
+	echo "mount -t devtmpfs none /dev" >> init
+	echo "umount /proc" >> init
+	echo "umount /sys" >> init
+	echo "umount /dev" >> init
+	echo "exec switch_root /new_root /sbin/init" >> init
+	chmod +x init
+
+	# Create archive
+	echo "Creating final archive..."
+	find . | cpio -o -H newc | gzip > $archive
+	mv $archive ..
+	cd .. && rm -rf tmp
 }
 
 # Uncompress an initramfs archive in a temporary folder and list its content
