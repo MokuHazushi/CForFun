@@ -42,6 +42,7 @@ function print_usage () {
 # Create a basic initramfs archive with the device /dev/sda1 as rootfs
 function create_initramfs () {
 	local bb_path
+	local switchroot_path
 	local libc_path
 	local linker_path
 	local archive="initramfs-linux.img"
@@ -49,6 +50,7 @@ function create_initramfs () {
 
 	# Find bin and libs
 	bb_path=`whereis busybox | cut -d" " -f2`
+	switchroot_path=`whereis switch_root | cut -d" " -f2`
 	libc_path=`whereis libc.so.6 | cut -d" " -f2`
 	linker_path=`whereis ld-linux-x86-64.so.2 | cut -d" " -f2`
 
@@ -58,6 +60,14 @@ function create_initramfs () {
 			exit $ERROR
 		fi
 		bb_path=`locate busybox | head -n1`
+	fi
+
+	if [ `echo $switchroot_path | grep ":"` ]; then
+		if [ ! -x $LOCATE_ON ]; then
+			echo "Error: switch_root binary not found"
+			exit $ERROR
+		fi
+		switchroot_path=`local switch_root | head -n1`
 	fi
 	
 	if [ `echo $libc_path | grep ":"` ]; then
@@ -84,6 +94,8 @@ function create_initramfs () {
 	echo "Copying..."
 	echo "`basename $bb_path`"
 	cp $bb_path bin
+	echo "`basename $switchroot_path`"
+	cp $switchroot_path bin
 	echo "`basename $libc_path`"
 	cp $libc_path lib
 	echo "`basename $linker_path`"
