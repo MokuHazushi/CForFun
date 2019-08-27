@@ -90,6 +90,7 @@ function create_initramfs () {
 	cp $linker_path lib
 	
 	# Install symbolic link
+	# See https://busybox.net/downloads/BusyBox.html for details
 	ln -s bin/busybox bin/mount
 	ln -s bin/busybox bin/umount
 
