@@ -98,8 +98,10 @@ function create_initramfs () {
 	cp $switchroot_path bin
 	echo "`basename $libc_path`"
 	cp $libc_path lib
+	cp $libc_path lib64
 	echo "`basename $linker_path`"
 	cp $linker_path lib
+	cp $linker_path lib64
 	
 	# Install symbolic link
 	# See https://busybox.net/downloads/BusyBox.html for details
