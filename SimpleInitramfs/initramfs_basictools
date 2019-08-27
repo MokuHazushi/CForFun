@@ -87,7 +87,7 @@ function create_initramfs () {
 	fi
 
 	mkdir tmp && cd tmp
-	mkdir --parents bin dev etc lib lib64 proc sbin sys new_root run
+	mkdir --parents bin dev etc lib lib64 proc sbin sys new_root run usr/bin usr/lib usr/lib64
 	
 	# Install busybox
 	echo "Installing busybox"
@@ -99,9 +99,13 @@ function create_initramfs () {
 	echo "`basename $libc_path`"
 	cp $libc_path lib
 	cp $libc_path lib64
+	cp $libc_path usr/lib
+	cp $libc_path usr/lib64
 	echo "`basename $linker_path`"
 	cp $linker_path lib
 	cp $linker_path lib64
+	cp $linker_path usr/lib
+	cp $linker_path usr/lib64
 	
 	# Install symbolic link
 	# See https://busybox.net/downloads/BusyBox.html for details
