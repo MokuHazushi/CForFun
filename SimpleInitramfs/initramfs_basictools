@@ -88,6 +88,10 @@ function create_initramfs () {
 	cp $libc_path lib
 	echo "`basename $linker_path`"
 	cp $linker_path lib
+	
+	# Install symbolic link
+	ln -s bin/busybox bin/mount
+	ln -s bin/busybox bin/umount
 
 	# Create init script
 	echo "Write init script"
