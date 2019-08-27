@@ -91,7 +91,7 @@ function create_initramfs () {
 
 	# Create init script
 	echo "Write init script"
-	echo "#!/bin/busybox.sh" >> init
+	echo "#!/bin/busybox sh" >> init
 	echo "mount -t proc none /proc" >> init
 	echo "mount -t sysfs none /sys" >> init 
 	echo "mount -t devtmpfs none /dev" >> init
