@@ -84,6 +84,13 @@ function create_initramfs () {
 	local bins=($busybox $switchroot)
 	local bb_bins=("mount" "umount" "mdev")
 
+	for bin in "${bins[@]}"; do
+		if [ ! -x `command -v "$bin"` ]; then
+			echo "Error: Command $bin not found please install '$bin' package"
+			exit ERROR
+		fi
+	done
+
 	# Create archive tree
 	mkdir tmp && cd tmp
 	mkdir --parents bin dev etc lib lib64 proc sbin sys new_root run usr/bin usr/lib usr/lib64
@@ -125,6 +132,11 @@ function create_initramfs () {
 # Uncompress an initramfs archive in a temporary folder and list its content
 # $1 is the file corresponding to the archive
 function list_content () {
+	if [ ! -x `command -v tree` ]; then
+		echo "Error: Command tree not found please install package 'tree'"
+		exit $ERROR
+	fi
+
 	if [ ! -r $1 ]; then
 		echo "Error: File '$1' does not exist or is not readable"
 		exit $ERROR
