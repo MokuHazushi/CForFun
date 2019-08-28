@@ -9,11 +9,13 @@
 # provided by busybox (ls, mkdir, cp, mount, insmod...)
 #
 # This script only creates an initramfs archive, to use it the rest of the
-# system has to be configured properly meaning :
+# system has to be configured properly, meaning :
 # 1) Having the kernel configured to enable initramfs (CONFIG_BLK_DEV_INITRD=y)
 # 2) Having the kernel configured to use a standalone initramfs archive compressed in gzip format
 # (General setup -> Initramfs source file(s) -> Support initial ramdisk/ramfs compressed using gzip)
-# 3) Configure grub to recognize the new initramfs file
+# 3) For the busybox utilitary 'mdev' to work, having the kernel configured to enable uevent helper
+# (CONFIG_UEVENT_HELPER=y or Device Drivers -> Generic Driver Options -> Support for uevent helper)
+# 4) Configure grub to recognize the new initramfs file
 #
 # Requirements (package to be installed) :
 # - tree (apt-get install tree)
@@ -22,13 +24,12 @@
 # cpio and gzip are most of the time part of the base kernel binaries.
 #
 # Assumptions :
-# For the initramfs creation command the init script assumes that the rootfs is located on the
+# For the initramfs creation command the rootfs is located on the
 # /dev/sda1 device
 
 # GLOBAL VARIABLES
 SUCCESS=1
 ERROR=-1
-LOCATE_ON=$(command -v locate)
 
 function print_usage () {
 	echo "Usage:"
@@ -39,85 +40,77 @@ function print_usage () {
 	echo "List the content of an initramfs archive (assume compressed with gzip)"
 }
 
+# Find the dependencies of a binary and copy them in the archive tree
+# To avoid the pain of detecting if it should be copied in lib, lib64, or usr directory
+# all the dependencies are copied once in lib and linked in the other dir
+# $1 is the path to the binary
+function copy_dependencies () {
+	ldd $1 | while read dep; do
+		local dep_name=`echo $dep | cut -d" " -f1`
+		local dep_path=`echo $dep | cut -d" " -f3`
+		local path_to_copy=""
+
+		# linux-vdso is already provided by the kernel
+		if [ $dep_name == "linux-vdso.so.1" ]; then
+			continue
+		elif [ $dep_name == "not a dynamic executable" ]; then
+			continue
+		elif [ -f $dep_name  ]; then
+			path_to_copy=$dep_name
+		else
+			path_to_copy=$dep_path
+		fi
+
+		if [ -f "lib/`basename $path_to_copy`" ]; then
+			continue
+		fi
+
+		echo "Copying `basename $path_to_copy`"
+		cp $path_to_copy lib 
+		ln -s "lib/`basename $path_to_copy`" lib64
+		ln -s "lib/`basename $path_to_copy`" usr/lib
+		ln -s "lib/`basename $path_to_copy`" usr/lib64
+	done
+}
+
 # Create a basic initramfs archive with the device /dev/sda1 as rootfs
 function create_initramfs () {
-	local bb_path
-	local switchroot_path
-	local libc_path
-	local linker_path
+	local busybox="busybox"
+	local switchroot="switch_root"
 	local archive="initramfs-linux.img"
 
+	local bins=($busybox $switchroot)
+	local bb_bins=("mount" "umount" "mdev")
 
-	# Find bin and libs
-	bb_path=`whereis busybox | cut -d" " -f2`
-	switchroot_path=`whereis switch_root | cut -d" " -f2`
-	libc_path=`whereis libc.so.6 | cut -d" " -f2`
-	linker_path=`whereis ld-linux-x86-64.so.2 | cut -d" " -f2`
-
-	if [ `echo $bb_path | grep ":"` ]; then
-		if [ ! -x $LOCATE_ON ]; then
-			echo "Error: busybox binary not found"
-			exit $ERROR
-		fi
-		bb_path=`locate busybox | head -n1`
-	fi
-
-	if [ `echo $switchroot_path | grep ":"` ]; then
-		if [ ! -x $LOCATE_ON ]; then
-			echo "Error: switch_root binary not found"
-			exit $ERROR
-		fi
-		switchroot_path=`local switch_root | head -n1`
-	fi
-	
-	if [ `echo $libc_path | grep ":"` ]; then
-		if [ ! -x $LOCATE_ON ]; then
-			echo "Error: libc.so.6 not found"
-			exit $ERROR
-		fi
-		libc_path=`locate libc.so.6 | head -n1`
-	fi
-
-	if [ `echo $linker_path | grep ":"` ]; then
-		if [ ! -x $LOCATE_ON ]; then
-			echo "Error: ld-linux-x86-64.so.2 not found"
-			exit $ERROR
-		fi
-		local linker_path=`locate ld-linux-x86-64.so.2 | head -n1`
-	fi
-
+	# Create archive tree
 	mkdir tmp && cd tmp
 	mkdir --parents bin dev etc lib lib64 proc sbin sys new_root run usr/bin usr/lib usr/lib64
-	
-	# Install busybox
-	echo "Installing busybox"
-	echo "Copying..."
-	echo "`basename $bb_path`"
-	cp $bb_path bin
-	echo "`basename $switchroot_path`"
-	cp $switchroot_path bin
-	echo "`basename $libc_path`"
-	cp $libc_path lib
-	cp $libc_path lib64
-	cp $libc_path usr/lib
-	cp $libc_path usr/lib64
-	echo "`basename $linker_path`"
-	cp $linker_path lib
-	cp $linker_path lib64
-	cp $linker_path usr/lib
-	cp $linker_path usr/lib64
-	
-	# Install symbolic link
+
+	# Install bin and dependencies
+	echo "Installing bins and libs..."
+	for bin in "${bins[@]}"; do
+		local path=`whereis $bin | cut -d" " -f2`
+		echo "Copying `basename $path`"
+		cp $path bin
+		ln -s "bin/`basename $path`" usr/bin
+		copy_dependencies $path
+	done
+
+	# Install busybox symbolic link
 	# See https://busybox.net/downloads/BusyBox.html for details
-	ln -s busybox bin/mount
-	ln -s busybox bin/umount
+	for bin in "${bb_bins[@]}"; do
+		echo "Create busybox symbolic link for $bin"
+		ln -s busybox bin/$bin
+	done
 
 	# Create init script
 	echo "Write init script"
 	echo "#!/bin/busybox sh" >> init
 	echo "mount -t proc none /proc" >> init
 	echo "mount -t sysfs none /sys" >> init 
-	echo "mount -t devtmpfs none /dev" >> init
+	echo "/sbin/mdev > /proc/sys/kernel/hotplug" >> init
+	echo "mdev -s" >> init
+	echo "mount /dev/sda1 /new_root" >> init
 	echo "umount /proc" >> init
 	echo "umount /sys" >> init
 	echo "umount /dev" >> init
