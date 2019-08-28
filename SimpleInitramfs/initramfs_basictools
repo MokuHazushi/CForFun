@@ -110,12 +110,9 @@ function create_initramfs () {
 	echo "#!/bin/busybox sh" >> init
 	echo "mount -t proc none /proc" >> init
 	echo "mount -t sysfs none /sys" >> init 
-	echo "/sbin/mdev > /proc/sys/kernel/hotplug" >> init
+	echo "/bin/mdev > /proc/sys/kernel/hotplug" >> init
 	echo "mdev -s" >> init
 	echo "mount /dev/sda1 /new_root" >> init
-	echo "umount /proc" >> init
-	echo "umount /sys" >> init
-	echo "umount /dev" >> init
 	echo "exec switch_root /new_root /sbin/init" >> init
 	chmod +x init
 
