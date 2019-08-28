@@ -50,20 +50,20 @@ function copy_dependencies () {
 		local dep_path=`echo $dep | cut -d" " -f3`
 		local path_to_copy=""
 
-		if [ $dep == "not a dynamic executable" ]; then
+		if [ "$dep" == "not a dynamic executable" ]; then
 			continue
 		fi
 
 		# linux-vdso is already provided by the kernel
-		if [ $dep_name == "linux-vdso.so.1" ]; then
+		if [ "$dep_name" == "linux-vdso.so.1" ]; then
 			continue
-		elif [ -f $dep_name  ]; then
+		elif [ -f "$dep_name"  ]; then
 			path_to_copy=$dep_name
 		else
 			path_to_copy=$dep_path
 		fi
 
-		if [ -f "lib/`basename $path_to_copy`" ]; then
+		if [ -f "lib/`basename "$path_to_copy"`" ]; then
 			continue
 		fi
 
